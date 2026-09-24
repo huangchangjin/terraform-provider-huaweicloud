@@ -523,6 +523,13 @@ The `configs` block support:
 * `client_cert` - (Optional, List) Specifies the client certificate configuration.
   The [client_cert](#client_cert_object) structure is documented below.
 
+* `flow_limit_strategy` - (Optional, List) Specifies the flow limit strategy configuration. When the actual usage
+  exceeds the limit threshold, the domain name will be disabled to effectively prevent high bills caused by traffic
+  theft or malicious attacks. The [flow_limit_strategy](#flow_limit_strategy_object) structure is documented below.
+
+  -> Due to the delay of monitoring data, the domain name will be disabled about 10 minutes after the usage reaches
+  the threshold.
+
 <a name="https_settings_object"></a>
 The `https_settings` block support:
 
@@ -1120,6 +1127,33 @@ The `client_cert` block support:
 
   -> 1. CDN will allow all client requests that hold the CA certificate by default.
   <br/>2. A maximum of `100` domain names can be configured. Multiple domain names can be separated by “,” or “|”.
+
+<a name="flow_limit_strategy_object"></a>
+The `flow_limit_strategy` block support:
+
+* `strategy_type` - (Required, String) Specifies the usage statistics type. Valid values are:
+  + **instant**: Instant usage.
+  + **hour**: Cumulative usage (hour).
+  + **day**: Cumulative usage (day).
+
+* `item_type` - (Required, String) Specifies the usage limit type. Valid values are:
+  + **bandwidth**: Bandwidth limit, in bit/s.
+  + **traffic**: Traffic limit, in byte.
+
+* `limit_value` - (Required, Int) Specifies the usage limit threshold. The domain name will be disabled after the
+  domain usage reaches the threshold. The value must be a positive integer.
+
+* `alarm_percent_threshold` - (Optional, Int) Specifies the usage alarm threshold. An alarm will be sent after the
+  domain usage reaches the threshold. The value ranges from `10` to `90`.
+
+* `ban_time` - (Optional, Int) Specifies the domain name ban period, in minutes. Valid values are:
+  + `0`: Do not automatically unban, the domain name needs to be manually unbanned.
+  + `60`: 60 minutes, i.e. 1 hour.
+  + `720`: 720 minutes, i.e. 12 hours.
+  + `1440`: 1440 minutes, i.e. 24 hours.
+  + `4320`: 4320 minutes, i.e. 3 days.
+
+  Defaults to `0`.
 
 <a name="cache_settings_object"></a>
 The `cache_settings` block support:
