@@ -530,6 +530,9 @@ The `configs` block support:
   -> Due to the delay of monitoring data, the domain name will be disabled about 10 minutes after the usage reaches
   the threshold.
 
+  -> If the flow limit strategy has been configured on the cloud but is not declared in the configuration, the
+  existing configuration will be kept during the update to avoid unexpected changes.
+
 <a name="https_settings_object"></a>
 The `https_settings` block support:
 
