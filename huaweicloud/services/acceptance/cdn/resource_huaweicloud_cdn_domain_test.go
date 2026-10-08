@@ -1910,6 +1910,19 @@ func TestAccDomain_flowLimitStrategy(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccDomain_flowLimitStrategy_step3(domainName),
+				Check: resource.ComposeTestCheckFunc(
+					rc.CheckResourceExists(),
+					resource.TestCheckResourceAttr(resourceName, "name", domainName),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.0.strategy_type", "day"),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.0.item_type", "traffic"),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.0.limit_value", "20000000"),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.0.alarm_percent_threshold", "70"),
+					resource.TestCheckResourceAttr(resourceName, "configs.0.flow_limit_strategy.0.ban_time", "720"),
+				),
+			},
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1967,6 +1980,24 @@ resource "huaweicloud_cdn_domain" "test" {
       ban_time                = 720
     }
   }
+}
+`, domainName)
+}
+
+func testAccDomain_flowLimitStrategy_step3(domainName string) string {
+	return fmt.Sprintf(`
+resource "huaweicloud_cdn_domain" "test" {
+  name         = "%[1]s"
+  type         = "wholeSite"
+  service_area = "outside_mainland_china"
+
+  sources {
+    active      = 1
+    origin      = "100.254.53.75"
+    origin_type = "ipaddr"
+  }
+
+  configs {}
 }
 `, domainName)
 }
