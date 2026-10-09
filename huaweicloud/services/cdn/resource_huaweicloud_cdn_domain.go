@@ -929,23 +929,28 @@ var flowLimitStrategy = schema.Schema{
 	Computed: true,
 	Elem: &schema.Resource{
 		Schema: map[string]*schema.Schema{
+			"enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"strategy_type": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"instant", "hour", "day",
 				}, false),
 			},
 			"item_type": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"bandwidth", "traffic",
 				}, false),
 			},
 			"limit_value": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 			},
 			"alarm_percent_threshold": {
 				Type:     schema.TypeInt,
@@ -2185,10 +2190,26 @@ func flattenClientCertAttributes(configResp interface{}) []map[string]interface{
 	return []map[string]interface{}{hstsAttrs}
 }
 
-func flattenFlowLimitStrategyAttributes(configResp interface{}) []interface{} {
+func flattenFlowLimitStrategyAttributes(configResp interface{}, d *schema.ResourceData) []interface{} {
 	curJson := utils.PathSearch("configs.flow_limit_strategy", configResp, make([]interface{}, 0))
 	curArray := curJson.([]interface{})
 	if len(curArray) == 0 {
+		// The flow limit strategy has been cleared from the cloud. If the configuration declares a block with
+		// `enabled` set to false, keep the disabled block in the state to stay consistent with the configuration
+		// and avoid unexpected plan.
+		if rawConfigs, ok := d.GetOk("configs.0.flow_limit_strategy"); ok {
+			rawArray := rawConfigs.(*schema.Set).List()
+			for _, v := range rawArray {
+				rawMap := v.(map[string]interface{})
+				if enabled, ok := rawMap["enabled"]; ok && !enabled.(bool) {
+					return []interface{}{
+						map[string]interface{}{
+							"enabled": false,
+						},
+					}
+				}
+			}
+		}
 		return nil
 	}
 
@@ -2196,6 +2217,7 @@ func flattenFlowLimitStrategyAttributes(configResp interface{}) []interface{} {
 	for _, v := range curArray {
 		rawMap := v.(map[string]interface{})
 		rst = append(rst, map[string]interface{}{
+			"enabled":                 true,
 			"strategy_type":           rawMap["strategy_type"],
 			"item_type":               rawMap["item_type"],
 			"limit_value":             rawMap["limit_value"],
@@ -2250,7 +2272,7 @@ func flattenConfigAttributes(configResp interface{}, d *schema.ResourceData) []m
 		"browser_cache_rules":           flattenBrowserCacheRulesAttributes(configResp),
 		"access_area_filter":            flattenAccessAreaFiltersAttributes(configResp),
 		"client_cert":                   flattenClientCertAttributes(configResp),
-		"flow_limit_strategy":           flattenFlowLimitStrategyAttributes(configResp),
+		"flow_limit_strategy":           flattenFlowLimitStrategyAttributes(configResp, d),
 	}
 	return []map[string]interface{}{configsAttrs}
 }
@@ -2886,10 +2908,15 @@ func buildCdnDomainFlowLimitStrategyOpts(rawFlowLimitStrategy []interface{}) []i
 	rst := make([]interface{}, 0, len(rawFlowLimitStrategy))
 	for _, v := range rawFlowLimitStrategy {
 		rawMap := v.(map[string]interface{})
+		if enabled, ok := rawMap["enabled"]; ok && !enabled.(bool) {
+			// The flow limit strategy is disabled, clear the related configuration.
+			return make([]interface{}, 0)
+		}
+
 		rst = append(rst, map[string]interface{}{
-			"strategy_type":           rawMap["strategy_type"],
-			"item_type":               rawMap["item_type"],
-			"limit_value":             rawMap["limit_value"],
+			"strategy_type":           utils.ValueIgnoreEmpty(rawMap["strategy_type"]),
+			"item_type":               utils.ValueIgnoreEmpty(rawMap["item_type"]),
+			"limit_value":             utils.ValueIgnoreEmpty(rawMap["limit_value"]),
 			"alarm_percent_threshold": utils.ValueIgnoreEmpty(rawMap["alarm_percent_threshold"]),
 			"ban_time":                utils.ValueIgnoreEmpty(rawMap["ban_time"]),
 		})

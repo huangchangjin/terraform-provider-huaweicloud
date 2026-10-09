@@ -531,7 +531,8 @@ The `configs` block support:
   the threshold.
 
   -> If the flow limit strategy has been configured on the cloud but is not declared in the configuration, the
-  existing configuration will be kept during the update to avoid unexpected changes.
+  existing configuration will be kept during the update to avoid unexpected changes. To clear the existing
+  configuration, declare a `flow_limit_strategy` block with `enabled` set to **false**.
 
 <a name="https_settings_object"></a>
 The `https_settings` block support:
@@ -1134,17 +1135,26 @@ The `client_cert` block support:
 <a name="flow_limit_strategy_object"></a>
 The `flow_limit_strategy` block support:
 
-* `strategy_type` - (Required, String) Specifies the usage statistics type. Valid values are:
+* `enabled` - (Optional, Bool) Specifies whether to enable the flow limit strategy. Defaults to **true**.
+  If set to **false**, the flow limit strategy configured on the cloud will be cleared, and the other fields in this
+  block can be omitted.
+
+* `strategy_type` - (Optional, String) Specifies the usage statistics type. Valid values are:
   + **instant**: Instant usage.
   + **hour**: Cumulative usage (hour).
   + **day**: Cumulative usage (day).
 
-* `item_type` - (Required, String) Specifies the usage limit type. Valid values are:
+  This field is required when `enabled` is set to **true**.
+
+* `item_type` - (Optional, String) Specifies the usage limit type. Valid values are:
   + **bandwidth**: Bandwidth limit, in bit/s.
   + **traffic**: Traffic limit, in byte.
 
-* `limit_value` - (Required, Int) Specifies the usage limit threshold. The domain name will be disabled after the
+  This field is required when `enabled` is set to **true**.
+
+* `limit_value` - (Optional, Int) Specifies the usage limit threshold. The domain name will be disabled after the
   domain usage reaches the threshold. The value must be a positive integer.
+  This field is required when `enabled` is set to **true**.
 
 * `alarm_percent_threshold` - (Optional, Int) Specifies the usage alarm threshold. An alarm will be sent after the
   domain usage reaches the threshold. The value ranges from `10` to `90`.
